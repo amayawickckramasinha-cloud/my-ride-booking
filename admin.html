@@ -1,1 +1,147 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MY RIDE - Admin Login</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#fff8dc;
+  color:#171717;
+}
+main{
+  max-width:420px;
+  margin:60px auto;
+  padding:20px;
+}
+header{
+  background:#ffcc00;
+  padding:22px;
+  border-radius:18px;
+  text-align:center;
+}
+h1{margin:0}
+.card{
+  background:white;
+  padding:22px;
+  border-radius:18px;
+  margin-top:20px;
+  box-shadow:0 4px 12px #0002;
+}
+label{
+  display:block;
+  margin:14px 0 6px;
+  font-weight:bold;
+}
+input{
+  width:100%;
+  padding:13px;
+  border:1px solid #bbb;
+  border-radius:10px;
+  font-size:16px;
+}
+button{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  background:#ffcc00;
+  border:0;
+  border-radius:10px;
+  font-weight:bold;
+  font-size:16px;
+}
+#message{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>🚕 MY RIDE</h1>
+<p>Admin Login</p>
+</header>
+
+<section class="card">
+<form id="loginForm">
+<label>Admin Email</label>
+<input id="email" type="email" required
+autocomplete="username">
+
+<label>Password</label>
+<input id="password" type="password" required
+autocomplete="current-password">
+
+<button id="loginButton" type="submit">
+Login
+</button>
+</form>
+<p id="message" role="status"></p>
+</section>
+</main>
+
+<script type="module">
+import {initializeApp} from
+"https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+
+import {
+ getAuth,
+ signInWithEmailAndPassword,
+ signOut
+} from
+"https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+
+const firebaseConfig={
+ apiKey:"AIzaSyBfayfp2YtC_pOrU_mQJSvO5dQxu-k4wsM",
+ authDomain:"my-ride-3558d.firebaseapp.com",
+ projectId:"my-ride-3558d",
+ storageBucket:"my-ride-3558d.firebasestorage.app",
+ messagingSenderId:"394434110885",
+ appId:"1:394434110885:web:52bb0019459a4ea894344c"
+};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+
+const adminUID="8zs8IqQtZLShkcTDy8rejtHvim12";
+
+const form=document.getElementById("loginForm");
+const message=document.getElementById("message");
+const button=document.getElementById("loginButton");
+
+form.addEventListener("submit",async(event)=>{
+ event.preventDefault();
+ button.disabled=true;
+ message.textContent="Checking login...";
+
+ try{
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+
+  const result=await signInWithEmailAndPassword(
+   auth,email,password
+  );
+
+  if(result.user.uid!==adminUID){
+   await signOut(auth);
+   message.textContent="Access denied.";
+   return;
+  }
+
+  message.textContent=
+   "Login successful. Admin Dashboard setup is pending.";
+
+  document.getElementById("password").value="";
+ }catch(error){
+  message.textContent=
+   "Login failed. Check your email and password.";
+ }finally{
+  button.disabled=false;
+ }
+});
+</script>
+</body>
+</html>
+
