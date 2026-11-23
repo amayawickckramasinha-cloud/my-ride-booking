@@ -162,7 +162,7 @@ onAuthStateChanged(auth,async user=>{
 
   snapshot.forEach(docSnap => {
     const driver = docSnap.data();
-
+console.log("Driver:", docSnap.id, driver);
     if (driver.status === "pending") pending++;
     if (driver.status === "approved") approved++;
 
