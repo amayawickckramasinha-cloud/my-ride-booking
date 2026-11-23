@@ -40,8 +40,12 @@ footer{text-align:center;padding:20px;color:#777;font-size:12px}
 
 <section class="card">
 <h2>🪪 Driver Registrations</h2>
-<p>Pending Drivers: <strong>Not available yet</strong></p>
-<p>Approved Drivers: <strong>Not available yet</strong></p>
+<p>Pending Drivers: <strong id="pendingCount">Loading...</strong></p>
+<p>Approved Drivers: <strong id="approvedCount">Loading...</strong></p>
+<div id="driverList" aria-live="polite">
+  Checking driver registrations...
+</div>
+
 <p class="note">
 Driver records require secure admin-only access.
 No driver identity documents are displayed.
