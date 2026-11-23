@@ -152,7 +152,36 @@ onAuthStateChanged(auth,async user=>{
 
  status.textContent="Admin login verified.";
  dashboard.classList.remove("hidden");
- logout.classList.remove("hidden");
+ logout.classList.remove("hidden");try {
+  const snapshot = await getDocs(collection(db, "Drivers"));
+  let pending = 0;
+  let approved = 0;
+  const driverList = document.getElementById("driverList");
+  driverList.replaceChildren();
+
+  snapshot.forEach(docSnap => {
+    const driver = docSnap.data();
+
+    if (driver.status === "pending") pending++;
+    if (driver.status === "approved") approved++;
+
+    const item = document.createElement("p");
+    item.textContent =
+      `${driver.name || "Unnamed"} - ${driver.vehicle || ""} - ${driver.status || "Unknown"}`;
+    driverList.appendChild(item);
+  });
+
+  document.getElementById("pendingCount").textContent = pending;
+  document.getElementById("approvedCount").textContent = approved;
+
+  if (snapshot.empty) {
+    driverList.textContent = "No driver registrations found.";
+  }
+} catch (error) {
+  document.getElementById("driverList").textContent =
+    "Could not load drivers: " + error.code;
+}
+
 });
 
 logout.addEventListener("click",async()=>{
