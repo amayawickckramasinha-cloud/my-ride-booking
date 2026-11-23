@@ -152,7 +152,8 @@ onAuthStateChanged(auth,async user=>{
 
  status.textContent="Admin login verified.";
  dashboard.classList.remove("hidden");
- logout.classList.remove("hidden");try {
+ logout.classList.remove("hidden");
+  try {
   const snapshot = await getDocs(collection(db, "Drivers"));
   let pending = 0;
   let approved = 0;
