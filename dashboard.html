@@ -163,8 +163,11 @@ onAuthStateChanged(auth,async user=>{
   snapshot.forEach(docSnap => {
     const driver = docSnap.data();
 console.log("Driver:", docSnap.id, driver);
-    if (driver.status === "pending") pending++;
-    if (driver.status === "approved") approved++;
+    const status = String(driver.status ?? "").trim().toLowerCase();
+if (status === "pending") pending++;
+if (status === "approved") approved++;
+
+    
 
     const item = document.createElement("p");
     item.textContent =
