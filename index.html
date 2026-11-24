@@ -18,6 +18,47 @@ const db = getFirestore(app);
 const titles={ride:'🚕 Ride Booking',parcel:'📦 Parcel Delivery',food:'🍔 Food Delivery',driver:'🚘 Driver Hire',feedback:'💬 Feedback & Complaints'};
 const locationField=(name,label,withGps=false)=>`<label>${label}<input name="${name}" id="${name}" required placeholder="Enter location or address"></label>${withGps?'<button type="button" class="action secondary" id="gps">📍 Use My Current Location</button><p id="gpsStatus" class="status"></p>':''}`;
 const field=(name,label,placeholder='',type='text')=>`<label>${label}<input name="${name}" type="${type}" placeholder="${placeholder}" required></label>`;
-const extra={ride:()=>locationField('pickup','📍 Pickup Location',true)+locationField('dropoff','🏁 Drop-off Location')+`<label>🚗 Vehicle Type<select name="vehicle"><option>Tuk Tuk</option><option>Car</option><option>Van</option><option>Bike</option></select></label>`,parcel:()=>locationField('pickup','📦 Parcel Pickup Location',true)+locationField('dropoff','🏁 Delivery Location')+field('receiver','Receiver Name')+field('receiverPhone','Receiver Phone','07XXXXXXXX','tel')+`<label>Parcel Type<select name="parcelType"><option>Documents</option><option>Clothes</option><option>Small Package</option><option>Other</option></select></label>`,food:()=>field('restaurant','🍔 Restaurant / Shop Name')+locationField('pickup','📍 Restaurant Pickup Location')+locationField('dropoff','🏠 Delivery Location',true)+`<label>Food Order Details<textarea name="order" required placeholder="What food should be collected?"></textarea></label>`,driver:()=>locationField('pickup','📍 Driver Required At',true)+field('vehicle','🚘 Your Vehicle Type','Car, Van, etc.')+field('duration','⏱️ Hours Required','e.g. 4 hours'),feedback:()=>`<label>Feedback Type<select name="type"><option>Feedback</option><option>Complaint</option><option>Question</option></select></label><label>Booking ID (optional)<input name="bookingId" placeholder="If available"></label><label>Message<textarea name="message" required placeholder="Describe your feedback"></textarea></label>`};
-let current='ride';const home=document.getElementById('home'),panel=document.getElementById('formPanel'),done=document.getElementById('done'),form=document.getElementById('bookingForm');function showHome(){home.classList.remove('hidden');panel.classList.add('hidden');done.classList.add('hidden');window.scrollTo(0,0)}function openService(s){current=s;home.classList.add('hidden');done.classList.add('hidden');panel.classList.remove('hidden');document.getElementById('formTitle').textContent=titles[s];document.getElementById('fields').innerHTML=extra[s]();form.reset();if(s==='feedback'){form.querySelector('[name="date"]').parentElement.classList.add('hidden');form.querySelector('[name="time"]').parentElement.classList.add('hidden');form.querySelector('[name="date"]').required=false;form.querySelector('[name="time"]').required=false}else{for(const n of ['date','time']){let el=form.querySelector(`[name="${n}"]`);el.parentElement.classList.remove('hidden');el.required=true}}const gps=document.getElementById('gps');if(gps)gps.addEventListener('click',getGPS);window.scrollTo(0,0)}function getGPS(){const out=document.getElementById('gpsStatus');const input=document.getElementById(current==='food'?'dropoff':'pickup');if(!navigator.geolocation){out.textContent='GPS is not available on this browser.';return}out.textContent='Requesting location permission…';navigator.geolocation.getCurrentPosition(p=>{input.value=p.coords.latitude.toFixed(6)+', '+p.coords.longitude.toFixed(6);out.textContent='Location found. Check the coordinates before submitting.'},e=>{out.textContent='Could not get location. Allow permission or type the address manually.'},{enableHighAccuracy:true,timeout:15000})}document.querySelectorAll('[data-service]').forEach(b=>b.addEventListener('click',()=>openService(b.dataset.service)));document.getElementById('back').addEventListener('click',showHome);document.getElementById('another').addEventListener('click',showHome);form.addEventListener('submit',e=>{e.preventDefault();const d=new FormData(form);let lines=[titles[current],'Status: Demo request only','Fare: Waiting for Admin quote'];for(const [k,v] of d.entries())if(v)lines.push(k+': '+v);document.getElementById('summary').textContent=lines.join('\n');panel.classList.add('hidden');done.classList.remove('hidden');window.scrollTo(0,0)});
-</script></body></html>
+const extra={ride:()=>locationField('pickup','📍 Pickup Location',true)+locationField('dropoff','🏁 Drop-off Location')+`<label>🚗 Vehicle Type<select name="vehicle"><option>Tuk Tuk</option><option>Car</option><option>Van</option><option>Bike</option></select></label>`,parcel:()=>locationField('pickup','📦 Parcel Pickup Location',true)+locationField('dropoff','🏁 Delivery Location')+field('receiver','Receiver Name')+field('receiverPhone','Receiver Phone','07XXXXXXXX','tel')+`<label>Parcel Type<select name="parcelType"><option>Documents</option><option>Clothes</option><option>Small Package</option><option>Other</option></select></label>`,food:()=>field('restaurant','🍔 Restaurant / Shop Name')+locationField('pickup','📍 Restaurant Pickup Location')+locationField('dropoff','🏠 Delivery Location',true)+`<label>Food Order Details<textarea name="order" required placeholder="What food should be collected?"></textarea></label>`,driver:()=>locationField('pickup','📍 Driver Required At',true)+field('vehicle','🚘 Your Vehicle Type','Car, Van, etc.')+field('duration','⏱️ Hours Required','e.g. 4 hours'),feedback:()=>`<label>Feedback Type<select name="type"><option>Feedback</option><option>Complaint</option><option>Question</option></select></label><label>Booking ID (optional)<input name="bookingId" placeholder="If available"></label><label>Message<textarea name="message" required placeholder="Describe your feedback"></textarea></label>`};form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+const button = form.querySelector('[type="submit"]');
+  button.disabled = true;
+  button.textContent = "Submitting...";
+
+  try {
+    const user = auth.currentUser ||
+      (await signInAnonymously(auth)).user;
+
+    const data = Object.fromEntries(new FormData(form));
+
+    const booking = {
+      ...data,
+      service: current,
+      customerId: user.uid,
+      status: "pending",
+      createdAt: serverTimestamp()
+    };
+
+    const result = await addDoc(
+      collection(db, "bookings"),
+      booking
+    );
+
+    document.getElementById("summary").textContent =
+      "Request submitted successfully!\n" +
+      "Booking ID: " + result.id + "\n" +
+      "Status: Pending\n" +
+      "Fare: Waiting for Admin quote";
+
+    panel.classList.add("hidden");
+    done.classList.remove("hidden");
+    window.scrollTo(0, 0);
+
+  } catch (error) {
+    alert("Request failed: " + error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Submit Request";
+  }
+});
+
+let current='ride';const home=document.getElementById('home'),panel=document.getElementById('formPanel'),done=document.getElementById('done'),form=document.getElementById('bookingForm');function showHome(){home.classList.remove('hidden');panel.classList.add('hidden');done.classList.add('hidden');window.scrollTo(0,0)}function openService(s){current=s;home.classList.add('hidden');done.classList.add('hidden');panel.classList.remove('hidden');document.getElementById('formTitle').textContent=titles[s];document.getElementById('fields').innerHTML=extra[s]();form.reset();if(s==='feedback'){form.querySelector('[name="date"]').parentElement.classList.add('hidden');form.querySelector('[name="time"]').parentElement.classList.add('hidden');form.querySelector('[name="date"]').required=false;form.querySelector('[name="time"]').required=false}else{for(const n of ['date','time']){let el=form.querySelector(`[name="${n}"]`);el.parentElement.classList.remove('hidden');el.required=true}}const gps=document.getElementById('gps');if(gps)gps.addEventListener('click',getGPS);window.scrollTo(0,0)}function getGPS(){const out=document.getElementById('gpsStatus');const input=document.getElementById(current==='food'?'dropoff':'pickup');if(!navigator.geolocation){out.textContent='GPS is not available on this browser.';return}out.textContent='Requesting location permission…';navigator.geolocation.getCurrentPosition(p=>{input.value=p.coords.latitude.toFixed(6)+', '+p.coords.longitude.toFixed(6);out.textContent='Location found. Check the coordinates before submitting.'},e=>{out.textContent='Could not get location. Allow permission or type the address manually.'},{enableHighAccuracy:true,timeout:15000})}document.querySelectorAll('[data-service]').forEach(b=>b.addEventListener('click',()=>openService(b.dataset.service)));document.getElementById('back').addEventListener('click',showHome);document.getElementById('another').addEventListener('click',showHome);</script></body></html>
