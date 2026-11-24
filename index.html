@@ -4,6 +4,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBfayfp2YtC_pOrU_mQJSvO5dQxu-k4wsM",
+  authDomain: "my-ride-3558d.firebaseapp.com",
+  projectId: "my-ride-3558d",
+  storageBucket: "my-ride-3558d.firebasestorage.app",
+  messagingSenderId: "394434110885",
+  appId: "1:394434110885:web:52bb0019459a4ea894344c"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 const titles={ride:'🚕 Ride Booking',parcel:'📦 Parcel Delivery',food:'🍔 Food Delivery',driver:'🚘 Driver Hire',feedback:'💬 Feedback & Complaints'};
 const locationField=(name,label,withGps=false)=>`<label>${label}<input name="${name}" id="${name}" required placeholder="Enter location or address"></label>${withGps?'<button type="button" class="action secondary" id="gps">📍 Use My Current Location</button><p id="gpsStatus" class="status"></p>':''}`;
 const field=(name,label,placeholder='',type='text')=>`<label>${label}<input name="${name}" type="${type}" placeholder="${placeholder}" required></label>`;
