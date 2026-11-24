@@ -1,0 +1,343 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MY RIDE - Sri Lanka</title>
+
+<!-- 01: DESIGN -->
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fff8dc;color:#171717;font-family:Arial,sans-serif}
+.app{max-width:520px;margin:auto;padding:18px}
+header{background:linear-gradient(135deg,#ffdc00,#ffb900);border-radius:22px;padding:28px 15px;text-align:center;box-shadow:0 6px 14px #0002}
+header h1{margin:0;font-size:34px}
+header p{margin:8px 0 0}
+.intro{text-align:center;margin:26px 0 18px}
+.intro h2{margin:0 0 8px}
+.intro p{color:#555;margin:0}
+.services{display:grid;gap:13px}
+.service{background:#171717;color:#ffcc00;border:0;border-radius:18px;padding:20px 15px;font-size:18px;font-weight:bold;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;box-shadow:0 4px 10px #0002}
+.panel{background:#fff;border-radius:18px;padding:18px;margin-top:18px;box-shadow:0 3px 10px #0001}
+.hidden{display:none!important}
+.back{background:none;border:0;padding:5px 0 15px;font-size:16px;cursor:pointer}
+.panel h2{margin:0 0 16px}
+label{display:block;font-size:14px;font-weight:bold;margin:13px 0 6px}
+input,select,textarea{display:block;width:100%;padding:13px;border:1px solid #bbb;border-radius:10px;font:inherit;background:#fff}
+textarea{min-height:90px;resize:vertical}
+.action{width:100%;padding:15px;border:0;border-radius:12px;background:#ffcc00;color:#171717;font-size:16px;font-weight:bold;cursor:pointer;margin-top:15px}
+.action:disabled{opacity:.6;cursor:wait}
+.secondary{background:#f2f2f2;margin-top:8px}
+.note,.status{font-size:13px;color:#555;line-height:1.5;overflow-wrap:anywhere}
+.summary{background:#fff8dc;padding:14px;border-radius:12px;white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere}
+footer{text-align:center;color:#777;font-size:12px;padding:22px 0}
+</style>
+</head>
+
+<body>
+<main class="app">
+
+<!-- 02: HOME -->
+<header>
+<h1>🚕 MY RIDE</h1>
+<p>Your Journey, Our Priority</p>
+</header>
+
+<section id="home">
+<div class="intro">
+<h2>Welcome to My Ride!</h2>
+<p>Choose your service</p>
+</div>
+<div class="services">
+<button type="button" class="service" data-service="ride">🚕 Ride Booking <span>›</span></button>
+<button type="button" class="service" data-service="parcel">📦 Parcel Delivery <span>›</span></button>
+<button type="button" class="service" data-service="food">🍔 Food Delivery <span>›</span></button>
+<button type="button" class="service" data-service="driver">🚘 Driver Hire <span>›</span></button>
+<button type="button" class="service" data-service="registration">🪪 Driver Registration <span>›</span></button>
+<button type="button" class="service" data-service="payments">💳 Payments &amp; Commission <span>›</span></button>
+<button type="button" class="service" data-service="feedback">💬 Feedback &amp; Complaints <span>›</span></button>
+</div>
+</section>
+
+<!-- 03: BOOKING FORM -->
+<section id="formPanel" class="panel hidden">
+<button type="button" class="back" id="back">← Back to Services</button>
+<h2 id="formTitle"></h2>
+<form id="bookingForm">
+<div id="fields"></div>
+<label>👤 Your Name
+<input name="customerName" required autocomplete="name" placeholder="Full name">
+</label>
+<label>📞 Phone Number
+<input name="phone" required type="tel" inputmode="tel" placeholder="07XXXXXXXX">
+</label>
+<label>📅 Preferred Date
+<input name="date" required type="date">
+</label>
+<label>🕒 Preferred Time
+<input name="time" required type="time">
+</label>
+<button class="action" type="submit">Submit Request</button>
+<p class="note">Requests are pending until confirmed by Admin.</p>
+</form>
+</section>
+
+<!-- 04: COMMISSION CALCULATOR -->
+<section id="paymentPanel" class="panel hidden">
+<button type="button" class="back" id="paymentBack">← Back to Services</button>
+<h2>💳 Payments &amp; Commission</h2>
+<p class="note">Customers may pay the driver in cash or arrange a bank transfer. Bank transfers must be verified separately. MY RIDE commission is 5% of the service fare, not an extra customer charge.</p>
+<label>Service Fare (LKR)<input id="fareInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 1000"></label>
+<div id="commissionResult" class="summary" aria-live="polite">Enter a fare to calculate the commission.</div>
+<p class="note">This calculator does not collect money or verify payments. Bank slip upload and admin payment confirmation require a separately configured secure backend.</p>
+</section>
+
+<!-- 05: SUCCESS SCREEN -->
+<section id="done" class="panel hidden">
+<h2>✅ Request Submitted</h2>
+<p class="note">Your request was saved, but it is not yet confirmed. Admin review and payment verification are separate processes.</p>
+<div id="summary" class="summary"></div>
+<button class="action" id="another" type="button">Back to Services</button>
+</section>
+
+<footer>MY RIDE • Sri Lanka</footer>
+</main>
+
+<script type="module">
+
+// 05: FIREBASE
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBfayfp2YtC_pOrU_mQJSvO5dQxu-k4wsM",
+  authDomain: "my-ride-3558d.firebaseapp.com",
+  projectId: "my-ride-3558d",
+  storageBucket: "my-ride-3558d.firebasestorage.app",
+  messagingSenderId: "394434110885",
+  appId: "1:394434110885:web:52bb0019459a4ea894344c"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// 06: ELEMENTS AND SERVICE FORMS
+const home = document.getElementById("home");
+const panel = document.getElementById("formPanel");
+const done = document.getElementById("done");
+const form = document.getElementById("bookingForm");
+const summary = document.getElementById("summary");
+const paymentPanel = document.getElementById('paymentPanel');
+
+let current = "ride";
+
+const titles = {
+  ride: "🚕 Ride Booking",
+  parcel: "📦 Parcel Delivery",
+  food: "🍔 Food Delivery",
+  driver: "🚘 Driver Hire",
+  registration: "🪪 Driver Registration",
+  payments: "💳 Payments & Commission",
+  feedback: "💬 Feedback & Complaints"
+};
+
+const locationField = (name, label, withGps = false) =>
+  `<label>${label}<input name="${name}" id="${name}" required placeholder="Enter location or address"></label>` +
+  (withGps
+    ? '<button type="button" class="action secondary" id="gps">📍 Use My Current Location</button><p id="gpsStatus" class="status"></p>'
+    : '');
+
+const field = (name, label, placeholder = '', type = 'text') =>
+  `<label>${label}<input name="${name}" type="${type}" placeholder="${placeholder}" required></label>`;
+
+const paymentOptions = '<label>Payment Method<select name="paymentMethod"><option value="cash">Cash to driver / delivery person</option><option value="bank_transfer">Bank transfer (manual verification)</option></select></label><p class="note">For bank transfers, keep your receipt. Online slip upload is not enabled yet.</p>';
+
+const extra = {
+  ride: () =>
+    locationField('pickup', '📍 Pickup Location', true) +
+    locationField('dropoff', '🏁 Drop-off Location') +
+    '<label>🚗 Vehicle Type<select name="vehicle"><option>Tuk Tuk</option><option>Car</option><option>Van</option><option>Bike</option></select></label>' + paymentOptions,
+
+  parcel: () =>
+    locationField('pickup', '📦 Parcel Pickup Location', true) +
+    locationField('dropoff', '🏁 Delivery Location') +
+    field('receiver', 'Receiver Name') +
+    field('receiverPhone', 'Receiver Phone', '07XXXXXXXX', 'tel') +
+    '<label>Parcel Type<select name="parcelType"><option>Documents</option><option>Clothes</option><option>Small Package</option><option>Other</option></select></label>' + paymentOptions,
+
+  food: () =>
+    field('restaurant', '🍔 Restaurant / Shop Name') +
+    locationField('pickup', '📍 Restaurant Pickup Location') +
+    locationField('dropoff', '🏠 Delivery Location', true) +
+    '<label>Food Order Details<textarea name="order" required placeholder="What food should be collected?"></textarea></label>' + paymentOptions,
+
+  driver: () =>
+    locationField('pickup', '📍 Driver Required At', true) +
+    field('vehicle', '🚘 Your Vehicle Type', 'Car, Van, etc.') +
+    field('duration', '⏱️ Hours Required', 'e.g. 4 hours') + paymentOptions,
+
+  registration: () =>
+    field('licenseNumber', 'Driving Licence Number') +
+    field('nic', 'NIC Number') +
+    field('vehicleType', 'Vehicle Type', 'Car, Tuk Tuk, Van, Bike') +
+    field('vehicleNumber', 'Vehicle Registration Number') +
+    locationField('operatingArea', 'Operating Area / District') +
+    '<p class="note">This is an application only. Admin approval and document checks are required before driving.</p>',
+
+  feedback: () =>
+    '<label>Feedback Type<select name="type"><option>Feedback</option><option>Complaint</option><option>Question</option></select></label>' +
+    '<label>Booking ID (optional)<input name="bookingId" placeholder="If available"></label>' +
+    '<label>Message<textarea name="message" required placeholder="Describe your feedback"></textarea></label>'
+};
+
+// 07: NAVIGATION
+function showHome() {
+  home.classList.remove('hidden');
+  panel.classList.add('hidden');
+  done.classList.add('hidden');
+  paymentPanel.classList.add('hidden');
+  window.scrollTo(0, 0);
+}
+
+function openService(service) {
+  if (service === 'payments') {
+    home.classList.add('hidden');
+    panel.classList.add('hidden');
+    done.classList.add('hidden');
+    paymentPanel.classList.remove('hidden');
+    window.scrollTo(0, 0);
+    return;
+  }
+  current = service;
+  home.classList.add('hidden');
+  done.classList.add('hidden');
+  panel.classList.remove('hidden');
+  paymentPanel.classList.add('hidden');
+
+  document.getElementById('formTitle').textContent = titles[service];
+  document.getElementById('fields').innerHTML = extra[service]();
+  form.reset();
+
+  for (const name of ['date', 'time']) {
+    const input = form.querySelector(`[name="${name}"]`);
+    const hide = service === 'feedback' || service === 'registration';
+    input.parentElement.classList.toggle('hidden', hide);
+    input.required = !hide;
+  }
+
+  const gps = document.getElementById('gps');
+  if (gps) {
+    gps.addEventListener('click', getGPS);
+  }
+
+  window.scrollTo(0, 0);
+}
+
+// 08: GPS
+function getGPS() {
+  const output = document.getElementById('gpsStatus');
+  const input = document.getElementById(
+    current === 'food' ? 'dropoff' : 'pickup'
+  );
+
+  if (!navigator.geolocation) {
+    output.textContent = 'GPS is not available on this browser.';
+    return;
+  }
+
+  output.textContent = 'Requesting location permission...';
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      input.value =
+        position.coords.latitude.toFixed(6) + ', ' +
+        position.coords.longitude.toFixed(6);
+      output.textContent =
+        'Location found. Check the coordinates before submitting.';
+    },
+    () => {
+      output.textContent =
+        'Could not get location. Allow permission or type the address manually.';
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+// 09: BUTTONS
+for (const button of document.querySelectorAll('[data-service]')) {
+  button.addEventListener('click', () => {
+    openService(button.dataset.service);
+  });
+}
+
+document.getElementById('back').addEventListener('click', showHome);
+document.getElementById('another').addEventListener('click', showHome);
+document.getElementById('paymentBack').addEventListener('click', showHome);
+document.getElementById('fareInput').addEventListener('input', event => {
+  const value = event.target.value;
+  const result = document.getElementById('commissionResult');
+  if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) {
+    result.textContent = 'Enter a valid fare to calculate the commission.';
+    return;
+  }
+  const fare = Math.round(Number(value) * 100) / 100;
+  const commission = Math.round(fare * 5) / 100;
+  const driverShare = Math.round((fare - commission) * 100) / 100;
+  const money = amount => 'LKR ' + amount.toLocaleString('en-LK', {minimumFractionDigits:2, maximumFractionDigits:2});
+  result.textContent = 'Customer fare: ' + money(fare) + '\nMY RIDE commission (5%): ' + money(commission) + '\nDriver share (95%): ' + money(driverShare);
+});
+
+// 10: SAVE REQUEST TO FIRESTORE
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const button = form.querySelector('[type="submit"]');
+  button.disabled = true;
+  button.textContent = 'Submitting...';
+
+  try {
+    const user = auth.currentUser ||
+      (await signInAnonymously(auth)).user;
+
+    const data = Object.fromEntries(new FormData(form));
+
+    const booking = {
+      ...data,
+      service: current,
+      customerId: user.uid,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    };
+
+    const result = await addDoc(
+      collection(db, 'bookings'),
+      booking
+    );
+
+    summary.textContent =
+      'Request submitted successfully!\n' +
+      'Booking ID: ' + result.id + '\n' +
+      'Status: Pending\n' +
+      'Fare: Waiting for Admin quote';
+
+    panel.classList.add('hidden');
+    done.classList.remove('hidden');
+    window.scrollTo(0, 0);
+
+  } catch (error) {
+    console.error('Booking error:', error);
+    alert('Request failed: ' + error.message);
+
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Submit Request';
+  }
+});
+
+</script>
+</body>
+</html>
+
